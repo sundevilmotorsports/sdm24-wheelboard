@@ -46,6 +46,9 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+I2C_HandleTypeDef hi2c1;
+
+//UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 static const uint8_t TMP102_ADDR = 0x48 << 1; // Use 8-bit address
@@ -116,45 +119,45 @@ int main(void)
 	}
 	prevHallVal = currHallVal;
 
-	//	if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2) == GPIO_PIN_RESET) {
-	//		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, 1);
-	//	} else {
-	//		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, 0);
-	//	}
+	if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2) == GPIO_PIN_RESET) {
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, 1);
+	} else {
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, 0);
+	}
 
 
 //	// Tell TMP102 that we want to read from the temperature register
-//	buf[0] = REG_TEMP;
-//	ret = HAL_I2C_Master_Transmit(&hi2c1, TMP102_ADDR, buf, 1, HAL_MAX_DELAY);
-//	if (ret != HAL_OK) {
-//		strcpy((char*)buf, "Error Tx\r\n");
-//	} else {
-//		// Read 2 bytes from the temperature register
-//		ret = HAL_I2C_Master_Receive(&hi2c1, TMP102_ADDR, buf, 2, HAL_MAX_DELAY);
-//		if (ret != HAL_OK) {
-//			strcpy((char*)buf, "Error Tx\r\n");
-//		} else {
-//			// Combine the bytes
-//			val = ((int16_t)buf[0] << 4) | (buf[1] >> 4);
-//
-//			// Convert to 2's complement, since temperature can be negative
-//			if (val > 0x7FF) {
-//				val |= 0xF000;
-//			}
-//
-//			// Convert temperature to decimal format
-//			temp_c *= 100;
-//			sprintf((char*)buf,
-//					"%u.%u C\r\n",
-//					((unsigned int)temp_c / 100),
-//					((unsigned int)temp_c % 100));
-//		}
-//	}
+	buf[0] = REG_TEMP;
+	ret = HAL_I2C_Master_Transmit(&hi2c1, TMP102_ADDR, buf, 1, HAL_MAX_DELAY);
+	if (ret != HAL_OK) {
+		strcpy((char*)buf, "Error Tx\r\n");
+	} else {
+		// Read 2 bytes from the temperature register
+		ret = HAL_I2C_Master_Receive(&hi2c1, TMP102_ADDR, buf, 2, HAL_MAX_DELAY);
+		if (ret != HAL_OK) {
+			strcpy((char*)buf, "Error Tx\r\n");
+		} else {
+			// Combine the bytes
+			val = ((int16_t)buf[0] << 4) | (buf[1] >> 4);
+
+			// Convert to 2's complement, since temperature can be negative
+			if (val > 0x7FF) {
+				val |= 0xF000;
+			}
+
+			// Convert temperature to decimal format
+			temp_c *= 100;
+			sprintf((char*)buf,
+					"%u.%u C\r\n",
+					((unsigned int)temp_c / 100),
+					((unsigned int)temp_c % 100));
+		}
+	}
 
 	// Send out buffer (temperature or error message)
-	//uint8_t Test[] = "Hello World !!!\r\n"; //Data to send
-	//HAL_UART_Transmit(&huart2,Test,sizeof(Test),10);// Sending in normal mode
-	//HAL_UART_Transmit(&huart2, buf, strlen((char*)buf), HAL_MAX_DELAY);
+//	uint8_t Test[] = "Hello World !!!\r\n"; //Data to send
+//	HAL_UART_Transmit(&huart2,Test,sizeof(Test),10);// Sending in normal mode
+//	HAL_UART_Transmit(&huart2, buf, strlen((char*)buf), HAL_MAX_DELAY);
 
 	HAL_Delay(50);
     /* USER CODE END WHILE */
