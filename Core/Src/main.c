@@ -114,7 +114,7 @@ int main(void)
 		int millisElapsed = HAL_GetTick() - prevHallMillis;
 		double velocity = magnetDistance / millisElapsed;
 	}
-	prevhallVal = currHallVal;
+	prevHallVal = currHallVal;
 
 	//	if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2) == GPIO_PIN_RESET) {
 	//		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, 1);
