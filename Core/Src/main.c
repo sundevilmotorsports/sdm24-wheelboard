@@ -31,8 +31,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define EEPROM_ADDR 0b1010 << 4
-#define BLOCK_1 0b000 << 1
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
