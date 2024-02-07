@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "eeprom.h"
+#include "mlx90614.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -31,7 +32,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define USER_LED_PIN GPIOB, GPIO_PIN_6
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -81,11 +82,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-  CAN_TxHeaderTypeDef   TxHeader;
 
-  uint8_t               TxData[8];
-
-  uint32_t              TxMailbox;
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -102,7 +99,9 @@ int main(void)
   MX_USB_OTG_FS_PCD_Init();
   /* USER CODE BEGIN 2 */
 
-
+  CAN_TxHeaderTypeDef   TxHeader;
+  uint8_t               TxData[8];
+  uint32_t              TxMailbox;
   TxHeader.IDE = CAN_ID_STD;
   TxHeader.StdId = 0x446;
   TxHeader.RTR = CAN_RTR_DATA;
@@ -111,13 +110,15 @@ int main(void)
   TxData[0] = 50;
   TxData[1] = 0xAA;
 
-  uint8_t owowo = 4;
+  //uint8_t owowo = 4;
   //eeprom_write(&hi2c2, 0b000, 169, &owowo);
 
   HAL_Delay(500);
 
   uint8_t rx = 0;
   eeprom_read(&hi2c2, 0b000, 169, &rx);
+  int16_t amb = 0;
+  int16_t obj = 0;
 
   /* USER CODE END 2 */
 
@@ -125,9 +126,11 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_6);
-	  HAL_Delay(1000);
+	  //HAL_GPIO_TogglePin(USER_LED_PIN);
+	  HAL_Delay(50);
 
+	  mlx90614_getAmbient(&hi2c2, &amb);
+	  mlx90614_getObject(&hi2c2, &obj);
 	  //if (HAL_CAN_AddTxMessage(&hcan2, &TxHeader, TxData, &TxMailbox) != HAL_OK)
 	  //{
 	     //Error_Handler ();
