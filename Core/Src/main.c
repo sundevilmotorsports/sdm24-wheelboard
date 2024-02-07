@@ -105,7 +105,7 @@ int main(void)
   TxHeader.IDE = CAN_ID_STD;
   TxHeader.StdId = 0x446;
   TxHeader.RTR = CAN_RTR_DATA;
-  TxHeader.DLC = 2;
+  TxHeader.DLC = 6;
 
   TxData[0] = 50;
   TxData[1] = 0xAA;
@@ -126,15 +126,22 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  //HAL_GPIO_TogglePin(USER_LED_PIN);
+	  //
 	  HAL_Delay(50);
 
 	  mlx90614_getAmbient(&hi2c2, &amb);
 	  mlx90614_getObject(&hi2c2, &obj);
-	  //if (HAL_CAN_AddTxMessage(&hcan2, &TxHeader, TxData, &TxMailbox) != HAL_OK)
-	  //{
+
+	  TxData[2] = amb >> 8;
+	  TxData[3] = amb & 0xFF;
+
+	  TxData[4] = obj >> 8;
+	  TxData[5] = obj & 0xFF;
+	  if (HAL_CAN_AddTxMessage(&hcan2, &TxHeader, TxData, &TxMailbox) != HAL_OK)
+	  {
+		 HAL_GPIO_TogglePin(USER_LED_PIN);
 	     //Error_Handler ();
-	  //}
+	  }
 
     /* USER CODE END WHILE */
 
