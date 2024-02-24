@@ -110,9 +110,6 @@ int main(void)
   TxData[0] = 50;
   TxData[1] = 0xAA;
 
-  //uint8_t owowo = 4;
-  //eeprom_write(&hi2c2, 0b000, 169, &owowo);
-
   HAL_Delay(500);
 
   uint8_t rx = 0;
