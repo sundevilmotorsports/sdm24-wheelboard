@@ -18,11 +18,13 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "usb_device.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "eeprom.h"
 #include "mlx90614.h"
+#include "string.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -37,15 +39,13 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
+#define WHEEL_RAIDUS 10  // replace
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
 CAN_HandleTypeDef hcan2;
 
 I2C_HandleTypeDef hi2c2;
-
-PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
 /* USER CODE BEGIN PV */
 
@@ -56,7 +56,6 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_CAN2_Init(void);
-static void MX_USB_OTG_FS_PCD_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -96,7 +95,7 @@ int main(void)
   MX_GPIO_Init();
   MX_I2C2_Init();
   MX_CAN2_Init();
-  MX_USB_OTG_FS_PCD_Init();
+  MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
 
   CAN_TxHeaderTypeDef   TxHeader;
@@ -121,22 +120,52 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  uint32_t old_hall_time = HAL_GetTick();
+  float C = 1; // todo wheel circumference div by 8
+  int mph = -1;
+  float f_per_s = -1.0;
+  int rising = 1;
+  // usb stuff
+  char msg[100];
+  uint32_t diff;
+
   while (1)
   {
-	  //
+
+	  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2) && rising == 1) {
+		  uint32_t new_time = HAL_GetTick();
+		  diff = new_time - old_hall_time; // in ms
+		  // there are 8 poles. let C be the circumference of the wheel divided by 8
+		  f_per_s = 1000 * (C / ((float) diff));
+		  mph = 0.681818 * f_per_s;
+		  rising = 0;
+	  } else if (!HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2) && rising == 0) {
+		  rising = 1;
+	  }
+
 	  HAL_Delay(50);
 
 	  mlx90614_getAmbient(&hi2c2, &amb);
 	  mlx90614_getObject(&hi2c2, &obj);
 
-	  TxData[2] = amb >> 8;
-	  TxData[3] = amb & 0xFF;
+	  TxData[0] = amb >> 8;
+	  TxData[1] = amb & 0xFF;
 
-	  TxData[4] = obj >> 8;
-	  TxData[5] = obj & 0xFF;
+	  TxData[2] = obj >> 8;
+	  TxData[3] = obj & 0xFF;
+
+	  TxData[4] = mph >> 24;
+	  TxData[5] = (mph >> 16) & 0xFF;
+	  TxData[6] = (mph >> 8) & 0xFF;
+	  TxData[5] = mph & 0xFF;
+
+	  sprintf(msg, "%f  |  %d  |  %f\r\n", f_per_s, rising, (float) diff);
+	  CDC_Transmit_FS((uint8_t*) msg, strlen(msg));
+
+
 	  if (HAL_CAN_AddTxMessage(&hcan2, &TxHeader, TxData, &TxMailbox) != HAL_OK)
 	  {
-		 HAL_GPIO_TogglePin(USER_LED_PIN);
+		 //HAL_GPIO_TogglePin(USER_LED_PIN);
 	     //Error_Handler ();
 	  }
 
@@ -267,41 +296,6 @@ static void MX_I2C2_Init(void)
 }
 
 /**
-  * @brief USB_OTG_FS Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USB_OTG_FS_PCD_Init(void)
-{
-
-  /* USER CODE BEGIN USB_OTG_FS_Init 0 */
-
-  /* USER CODE END USB_OTG_FS_Init 0 */
-
-  /* USER CODE BEGIN USB_OTG_FS_Init 1 */
-
-  /* USER CODE END USB_OTG_FS_Init 1 */
-  hpcd_USB_OTG_FS.Instance = USB_OTG_FS;
-  hpcd_USB_OTG_FS.Init.dev_endpoints = 4;
-  hpcd_USB_OTG_FS.Init.speed = PCD_SPEED_FULL;
-  hpcd_USB_OTG_FS.Init.dma_enable = DISABLE;
-  hpcd_USB_OTG_FS.Init.phy_itface = PCD_PHY_EMBEDDED;
-  hpcd_USB_OTG_FS.Init.Sof_enable = DISABLE;
-  hpcd_USB_OTG_FS.Init.low_power_enable = DISABLE;
-  hpcd_USB_OTG_FS.Init.lpm_enable = DISABLE;
-  hpcd_USB_OTG_FS.Init.vbus_sensing_enable = DISABLE;
-  hpcd_USB_OTG_FS.Init.use_dedicated_ep1 = DISABLE;
-  if (HAL_PCD_Init(&hpcd_USB_OTG_FS) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USB_OTG_FS_Init 2 */
-
-  /* USER CODE END USB_OTG_FS_Init 2 */
-
-}
-
-/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -309,6 +303,8 @@ static void MX_USB_OTG_FS_PCD_Init(void)
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
+/* USER CODE BEGIN MX_GPIO_Init_1 */
+/* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOH_CLK_ENABLE();
@@ -331,6 +327,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
+/* USER CODE BEGIN MX_GPIO_Init_2 */
+/* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */

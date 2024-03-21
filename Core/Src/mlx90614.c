@@ -66,5 +66,5 @@ uint8_t mlx90614_getObject2(I2C_HandleTypeDef* hi2c, int16_t* objectTemp)
 
 float mlx90614_calcTemperature(int16_t temperature)
 {
-	return 0.0;
+	return ((temperature * 0.02) - 273.15) * (9.0 / 5.0) + 32.0;
 }
