@@ -25,6 +25,14 @@ uint8_t mlx90614_setEmissivity(I2C_HandleTypeDef* hi2c, float emissivity)
 
 uint8_t mlx90614_getEmissivity(I2C_HandleTypeDef* hi2c, float* emissivity)
 {
+    uint8_t buf[3];
+    if (HAL_I2C_Mem_Read(hi2c, MLX90614_I2C_ADDR | 0b1, MLX90614_REG_KE, 1, buf, 3, 1000) != HAL_OK)
+    {
+        return 0;
+    }
+    uint16_t ke = (buf[1] << 8) | buf[0];
+    *emissivity = ( (float) ke ) / 65535.0;
+
 	return 1;
 }
 
