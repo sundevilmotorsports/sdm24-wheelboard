@@ -126,7 +126,7 @@ int main(void)
   float f_per_s = -1.0;
   int rising = 1;
   // usb stuff
-  char msg[100];
+  //char msg[100];
   uint32_t diff;
 
   while (1)
@@ -135,10 +135,11 @@ int main(void)
 	  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2) && rising == 1) {
 		  uint32_t new_time = HAL_GetTick();
 		  diff = new_time - old_hall_time; // in ms
-		  // there are 8 poles. let C be the circumference of the wheel divided by 8
+		  // there are 8 poles. let C be the circumference of the wheel divided by 8 (in ft)
 		  f_per_s = 1000 * (C / ((float) diff));
 		  mph = 0.681818 * f_per_s;
 		  rising = 0;
+		  old_hall_time = new_time;
 	  } else if (!HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2) && rising == 0) {
 		  rising = 1;
 	  }
@@ -159,8 +160,8 @@ int main(void)
 	  TxData[6] = (mph >> 8) & 0xFF;
 	  TxData[5] = mph & 0xFF;
 
-	  sprintf(msg, "%f  |  %d  |  %f\r\n", f_per_s, rising, (float) diff);
-	  CDC_Transmit_FS((uint8_t*) msg, strlen(msg));
+//	  sprintf(msg, "%f  |  %d  |  %d\r\n", f_per_s, rising, diff);
+//	  CDC_Transmit_FS((uint8_t*) msg, strlen(msg));
 
 
 	  if (HAL_CAN_AddTxMessage(&hcan2, &TxHeader, TxData, &TxMailbox) != HAL_OK)
