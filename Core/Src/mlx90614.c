@@ -18,6 +18,11 @@ uint8_t mlx90614_setEmissivity(I2C_HandleTypeDef* hi2c, float emissivity)
 	{
 		owo = 0x2000;
 	}
+	else if (owo > 0xFFFF)
+	{
+		owo = 0xFFFF;
+	}
+
 
 
 	return 1;

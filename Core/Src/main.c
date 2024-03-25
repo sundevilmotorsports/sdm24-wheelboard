@@ -121,7 +121,7 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   uint32_t old_hall_time = HAL_GetTick();
-  float C = 1; // todo wheel circumference div by 8
+  float C = 7.069; // wheel diameter is 18in, circumference ~56in
   int mph = -1;
   float f_per_s = -1.0;
   int rising = 1;
@@ -158,7 +158,7 @@ int main(void)
 	  TxData[4] = mph >> 24;
 	  TxData[5] = (mph >> 16) & 0xFF;
 	  TxData[6] = (mph >> 8) & 0xFF;
-	  TxData[5] = mph & 0xFF;
+	  TxData[7] = mph & 0xFF;
 
 //	  sprintf(msg, "%f  |  %d  |  %d\r\n", f_per_s, rising, diff);
 //	  CDC_Transmit_FS((uint8_t*) msg, strlen(msg));
