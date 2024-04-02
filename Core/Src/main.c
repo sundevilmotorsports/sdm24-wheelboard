@@ -128,47 +128,40 @@ int main(void)
   // usb stuff
   //char msg[100];
   uint32_t diff;
+  uint32_t rpm = 0;
 
   while (1)
   {
-
+      // compute wheel RPM
 	  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2) && rising == 1) {
 		  uint32_t new_time = HAL_GetTick();
 		  diff = new_time - old_hall_time; // in ms
-		  // there are 8 poles. let C be the circumference of the wheel divided by 8 (in ft)
-		  f_per_s = 1000 * (C / ((float) diff));
-		  mph = 0.681818 * f_per_s;
-		  rising = 0;
+		  rpm = (1000 * 60) / (diff * 8); 
+          rising = 0;
 		  old_hall_time = new_time;
 	  } else if (!HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2) && rising == 0) {
 		  rising = 1;
 	  }
 
-	  HAL_Delay(50);
 
-	  mlx90614_getAmbient(&hi2c2, &amb);
-	  mlx90614_getObject(&hi2c2, &obj);
+      // send CAN message every 50 ms (20 Hz)
+      static uint32_t canTimeout = 0;
+      if (HAL_GetTick() - canTimeout > 50) {
+          canTimeout = HAL_GetTick();
 
-	  TxData[0] = amb >> 8;
-	  TxData[1] = amb & 0xFF;
+	      mlx90614_getAmbient(&hi2c2, &amb);
+	      mlx90614_getObject(&hi2c2, &obj);
 
-	  TxData[2] = obj >> 8;
-	  TxData[3] = obj & 0xFF;
+	      TxData[0] = rpm >> 8;
+	      TxData[1] = rpm & 0xFF;
 
-	  TxData[4] = mph >> 24;
-	  TxData[5] = (mph >> 16) & 0xFF;
-	  TxData[6] = (mph >> 8) & 0xFF;
-	  TxData[7] = mph & 0xFF;
+	      TxData[2] = obj >> 8;
+	      TxData[3] = obj & 0xFF;
 
-//	  sprintf(msg, "%f  |  %d  |  %d\r\n", f_per_s, rising, diff);
-//	  CDC_Transmit_FS((uint8_t*) msg, strlen(msg));
-
-
-	  if (HAL_CAN_AddTxMessage(&hcan2, &TxHeader, TxData, &TxMailbox) != HAL_OK)
-	  {
-		 //HAL_GPIO_TogglePin(USER_LED_PIN);
-	     //Error_Handler ();
-	  }
+	      TxData[4] = amb >> 8;
+	      TxData[5] = amb & 0xFF;
+	      if (HAL_CAN_AddTxMessage(&hcan2, &TxHeader, TxData, &TxMailbox) != HAL_OK);
+      }
 
     /* USER CODE END WHILE */
 
