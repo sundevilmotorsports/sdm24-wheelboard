@@ -22,6 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "usbd_cdc_if.h"
 #include "eeprom.h"
 #include "mlx90614.h"
 #include "string.h"
@@ -64,7 +65,9 @@ static void MX_CAN2_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+CAN_TxHeaderTypeDef   TxHeader;
+uint8_t               TxData[8];
+uint32_t              TxMailbox;
 /* USER CODE END 0 */
 
 /**
@@ -99,10 +102,6 @@ int main(void)
   MX_CAN2_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-
-  CAN_TxHeaderTypeDef   TxHeader;
-  uint8_t               TxData[8];
-  uint32_t              TxMailbox;
   TxHeader.IDE = CAN_ID_STD;
   TxHeader.StdId = 0x446;
   TxHeader.RTR = CAN_RTR_DATA;
@@ -113,10 +112,16 @@ int main(void)
 
   HAL_Delay(500);
 
-  uint8_t rx = 0;
-  eeprom_read(&hi2c2, 0b000, 169, &rx);
+  //eeprom_read(&hi2c2, 0b000, 169, &rx);
+  uint16_t addr = 0;
+  eeprom_config_read(&hi2c2, &addr);
+  //eeprom_config_write(&hi2c2, 0x363);
+  TxHeader.StdId = addr;
   int16_t amb = 0;
   int16_t obj = 0;
+  float emi = 0.0;
+  //mlx90614_setEmissivity(&hi2c2, 0.55); // 0.55 emissivity for steel
+  mlx90614_getEmissivity(&hi2c2, &emi);
 
   /* USER CODE END 2 */
 
@@ -124,7 +129,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 
   // usb stuff
-  //char msg[100];
+  char msg[100];
 
 
   while (1)
@@ -164,6 +169,13 @@ int main(void)
       }
 
       // TODO periodically send USB debug messages
+      static uint32_t usbTimeout = 0;
+      if (HAL_GetTick() - usbTimeout > 200) {
+    	  usbTimeout = HAL_GetTick();
+
+    	  sprintf(msg, "CAN addr: %x\tRPM: %d\temissivity: %f\tobj: %f\tamb: %f\r\n", addr, rpm, emi, mlx90614_calcTemperature(obj), mlx90614_calcTemperature(amb));
+    	  CDC_Transmit_FS((uint8_t*) msg, strlen(msg));
+      }
 
     /* USER CODE END WHILE */
 

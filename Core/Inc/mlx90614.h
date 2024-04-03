@@ -22,5 +22,6 @@ uint8_t mlx90614_getAmbient(I2C_HandleTypeDef* hi2c, int16_t* ambientTemp);
 uint8_t mlx90614_getObject(I2C_HandleTypeDef* hi2c, int16_t* objectTemp);
 uint8_t mlx90614_getObject2(I2C_HandleTypeDef* hi2c, int16_t* objectTemp);
 float mlx90614_calcTemperature(int16_t temperature);
+uint8_t mlx90614_crc8(uint8_t *data, uint8_t len);
 
 #endif /* INC_MLX90614_H_ */
