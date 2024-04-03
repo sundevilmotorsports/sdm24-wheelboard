@@ -133,6 +133,7 @@ int main(void)
   while (1)
   {
       // compute wheel RPM
+      // TODO change to interrupt
 	  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2) && rising == 1) {
 		  uint32_t new_time = HAL_GetTick();
 		  diff = new_time - old_hall_time; // in ms
@@ -162,6 +163,8 @@ int main(void)
 	      TxData[5] = amb & 0xFF;
 	      if (HAL_CAN_AddTxMessage(&hcan2, &TxHeader, TxData, &TxMailbox) != HAL_OK);
       }
+
+      // TODO periodically send USB debug messages
 
     /* USER CODE END WHILE */
 
