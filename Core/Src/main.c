@@ -48,7 +48,9 @@ CAN_HandleTypeDef hcan2;
 I2C_HandleTypeDef hi2c2;
 
 /* USER CODE BEGIN PV */
-
+uint32_t old_hall_time = 0;
+uint32_t diff = 0;
+uint32_t rpm = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -120,20 +122,16 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  uint32_t old_hall_time = HAL_GetTick();
-  float C = 7.069; // wheel diameter is 18in, circumference ~56in
-  int mph = -1;
-  float f_per_s = -1.0;
-  int rising = 1;
+
   // usb stuff
   //char msg[100];
-  uint32_t diff;
-  uint32_t rpm = 0;
+
 
   while (1)
   {
       // compute wheel RPM
       // TODO change to interrupt
+	  /*
 	  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2) && rising == 1) {
 		  uint32_t new_time = HAL_GetTick();
 		  diff = new_time - old_hall_time; // in ms
@@ -143,6 +141,7 @@ int main(void)
 	  } else if (!HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2) && rising == 0) {
 		  rising = 1;
 	  }
+	  */
 
 
       // send CAN message every 50 ms (20 Hz)
@@ -313,7 +312,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : PA2 */
   GPIO_InitStruct.Pin = GPIO_PIN_2;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
@@ -324,12 +323,29 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI2_IRQn);
+
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
+uint32_t new_time = 0;
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  if(GPIO_Pin == GPIO_PIN_2) {
+	  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_6);
+	  new_time = HAL_GetTick();
+	  diff = new_time - old_hall_time;
+	  old_hall_time = new_time;
 
+	  rpm = (1000 * 60) / (diff * 8);
+  } else {
+      __NOP();
+  }
+}
 /* USER CODE END 4 */
 
 /**
