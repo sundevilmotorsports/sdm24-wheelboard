@@ -113,9 +113,9 @@ int main(void)
   HAL_Delay(500);
 
   //eeprom_read(&hi2c2, 0b000, 169, &rx);
-  uint16_t addr = 0;
+  uint16_t addr = 2;
+  //eeprom_config_write(&hi2c2, 0x366);
   eeprom_config_read(&hi2c2, &addr);
-  //eeprom_config_write(&hi2c2, 0x363);
   TxHeader.StdId = addr;
   int16_t amb = 0;
   int16_t obj = 0;
@@ -134,21 +134,6 @@ int main(void)
 
   while (1)
   {
-      // compute wheel RPM
-      // TODO change to interrupt
-	  /*
-	  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2) && rising == 1) {
-		  uint32_t new_time = HAL_GetTick();
-		  diff = new_time - old_hall_time; // in ms
-		  rpm = (1000 * 60) / (diff * 8); 
-          rising = 0;
-		  old_hall_time = new_time;
-	  } else if (!HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2) && rising == 0) {
-		  rising = 1;
-	  }
-	  */
-
-
       // send CAN message every 50 ms (20 Hz)
       static uint32_t canTimeout = 0;
       if (HAL_GetTick() - canTimeout > 50) {
@@ -168,12 +153,12 @@ int main(void)
 	      if (HAL_CAN_AddTxMessage(&hcan2, &TxHeader, TxData, &TxMailbox) != HAL_OK);
       }
 
-      // TODO periodically send USB debug messages
+      // periodically send USB debug messages
       static uint32_t usbTimeout = 0;
       if (HAL_GetTick() - usbTimeout > 200) {
     	  usbTimeout = HAL_GetTick();
 
-    	  sprintf(msg, "CAN addr: %x\tRPM: %d\temissivity: %f\tobj: %f\tamb: %f\r\n", addr, rpm, emi, mlx90614_calcTemperature(obj), mlx90614_calcTemperature(amb));
+    	  sprintf(msg, "CAN addr: %x\tRPM: %d\temissivity: %f\tobj: %f\tamb: %f\r\n", addr, TxData[0] << 8 | TxData[1], emi, mlx90614_calcTemperature(obj), mlx90614_calcTemperature(amb));
     	  CDC_Transmit_FS((uint8_t*) msg, strlen(msg));
       }
 
