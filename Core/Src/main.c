@@ -139,9 +139,9 @@ int main(void)
 
   while (1)
   {
-      // send CAN message every 50 ms (20 Hz)
+      // send CAN message every 40 ms (25 Hz)
       static uint32_t canTimeout = 0;
-      if (HAL_GetTick() - canTimeout > 50) {
+      if (HAL_GetTick() - canTimeout > 40) {
           canTimeout = HAL_GetTick();
 
 	      mlx90614_getAmbient(&hi2c2, &amb);
