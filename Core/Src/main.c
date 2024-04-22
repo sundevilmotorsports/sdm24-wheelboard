@@ -48,10 +48,10 @@ CAN_HandleTypeDef hcan2;
 
 I2C_HandleTypeDef hi2c2;
 
+TIM_HandleTypeDef htim5;
+
 /* USER CODE BEGIN PV */
-uint32_t old_hall_time = 0;
-uint32_t diff = 0;
-uint32_t rpm = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -59,6 +59,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_CAN2_Init(void);
+static void MX_TIM5_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -68,6 +69,9 @@ static void MX_CAN2_Init(void);
 CAN_TxHeaderTypeDef   TxHeader;
 uint8_t               TxData[8];
 uint32_t              TxMailbox;
+volatile uint32_t old_hall_time = 0;
+volatile uint32_t diff = 0;
+uint32_t rpm = 0;
 /* USER CODE END 0 */
 
 /**
@@ -101,6 +105,7 @@ int main(void)
   MX_I2C2_Init();
   MX_CAN2_Init();
   MX_USB_DEVICE_Init();
+  MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
   TxHeader.IDE = CAN_ID_STD;
   TxHeader.StdId = 0x446;
@@ -142,6 +147,7 @@ int main(void)
 	      mlx90614_getAmbient(&hi2c2, &amb);
 	      mlx90614_getObject(&hi2c2, &obj);
 
+	      rpm = (1000000 * 60) / (diff * 8);
 	      TxData[0] = rpm >> 8;
 	      TxData[1] = rpm & 0xFF;
 
@@ -155,10 +161,11 @@ int main(void)
 
       // periodically send USB debug messages
       static uint32_t usbTimeout = 0;
-      if (HAL_GetTick() - usbTimeout > 200) {
+      if (HAL_GetTick() - usbTimeout > 250) {
     	  usbTimeout = HAL_GetTick();
 
     	  sprintf(msg, "CAN addr: %x\tRPM: %d\temissivity: %f\tobj: %f\tamb: %f\r\n", addr, TxData[0] << 8 | TxData[1], emi, mlx90614_calcTemperature(obj), mlx90614_calcTemperature(amb));
+    	  //sprintf(msg, "millis: %d\tmicros: %d\r\n", HAL_GetTick(), __HAL_TIM_GET_COUNTER(&htim5));
     	  CDC_Transmit_FS((uint8_t*) msg, strlen(msg));
       }
 
@@ -289,6 +296,51 @@ static void MX_I2C2_Init(void)
 }
 
 /**
+  * @brief TIM5 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM5_Init(void)
+{
+
+  /* USER CODE BEGIN TIM5_Init 0 */
+
+  /* USER CODE END TIM5_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM5_Init 1 */
+
+  /* USER CODE END TIM5_Init 1 */
+  htim5.Instance = TIM5;
+  htim5.Init.Prescaler = 83;
+  htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim5.Init.Period = 4294967295;
+  htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim5.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim5) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim5, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim5, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM5_Init 2 */
+  HAL_TIM_Base_Start(&htim5);
+  /* USER CODE END TIM5_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -329,16 +381,14 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-uint32_t new_time = 0;
+volatile uint32_t new_time = 0;
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if(GPIO_Pin == GPIO_PIN_2) {
 	  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_6);
-	  new_time = HAL_GetTick();
+	  new_time = __HAL_TIM_GET_COUNTER(&htim5);
 	  diff = new_time - old_hall_time;
 	  old_hall_time = new_time;
-
-	  rpm = (1000 * 60) / (diff * 8);
   } else {
       __NOP();
   }
