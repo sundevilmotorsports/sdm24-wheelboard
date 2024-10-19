@@ -147,7 +147,15 @@ int main(void)
 	      mlx90614_getAmbient(&hi2c2, &amb);
 	      mlx90614_getObject(&hi2c2, &obj);
 
-	      rpm = (1000000 * 60) / (diff * 8);
+	      // *** RPM Timeout Logic ***
+	      //If no RPM change for 500 ticks, RPM = 0
+	      if(diff<=500){
+		      rpm = (1000000 * 60) / (diff * 8);
+	      }
+	      else{
+	    	  rpm = 0;
+	      }
+
 	      TxData[0] = rpm >> 8;
 	      TxData[1] = rpm & 0xFF;
 
