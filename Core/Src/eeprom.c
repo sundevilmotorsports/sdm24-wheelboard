@@ -17,20 +17,20 @@ HAL_StatusTypeDef eeprom_config_read(I2C_HandleTypeDef* hi2c, uint16_t* can_addr
 {
     uint8_t temp_addr_hi;
     uint8_t temp_addr_lo;
-    eeprom_read(hi2c, 0b000, 0x0D, &temp_addr_hi);
+    eeprom_read(hi2c, 0b000, CAN_ADDR0, &temp_addr_hi);
     HAL_Delay(1);
-    eeprom_read(hi2c, 0b000, 0x0F, &temp_addr_lo);
+    eeprom_read(hi2c, 0b000, CAN_ADDR1, &temp_addr_lo);
     *can_addr = (temp_addr_hi << 8) | (temp_addr_lo);
     return HAL_OK;
 }
 
 HAL_StatusTypeDef eeprom_config_write(I2C_HandleTypeDef* hi2c, uint16_t can_addr)
 {
-    uint8_t addr_hi = (can_addr & 0x07FF) >> 8;
-    uint8_t addr_lo = can_addr & 0x00FF;
-    eeprom_write(hi2c, 0b000, 0x0D, &addr_hi);
+    uint8_t addr_hi = (can_addr >> 8) & 0xFF;
+    uint8_t addr_lo = can_addr & 0xFF;
+    eeprom_write(hi2c, 0b000, CAN_ADDR0, &addr_hi);
     HAL_Delay(1);
-    eeprom_write(hi2c, 0b000, 0x0F, &addr_lo);
+    eeprom_write(hi2c, 0b000, CAN_ADDR1, &addr_lo);
     return HAL_OK;
 }
 

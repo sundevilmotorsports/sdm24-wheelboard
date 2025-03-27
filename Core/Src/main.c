@@ -119,7 +119,11 @@ int main(void)
 
   //eeprom_read(&hi2c2, 0b000, 169, &rx);
   uint16_t addr = 2;
+  uint16_t can_addr = 0x446;
+
+  eeprom_config_write(&hi2c2, can_addr);
   //eeprom_config_write(&hi2c2, 0x366);
+  HAL_Delay(1);
   eeprom_config_read(&hi2c2, &addr);
   TxHeader.StdId = addr;
   int16_t amb = 0;
