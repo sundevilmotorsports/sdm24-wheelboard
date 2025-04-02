@@ -18,10 +18,10 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "usb_device.h"
-
+//#include "usb_device.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "usb_device.h"
 #include "usbd_cdc_if.h"
 #include "eeprom.h"
 #include "mlx90614.h"
@@ -80,6 +80,7 @@ uint32_t rpm = 0;
   */
 int main(void)
 {
+
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -103,12 +104,12 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_I2C2_Init();
-  MX_CAN2_Init();
   MX_USB_DEVICE_Init();
+  MX_CAN2_Init();
   MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
   TxHeader.IDE = CAN_ID_STD;
-  TxHeader.StdId = 0x446;
+  TxHeader.StdId = 0x363;
   TxHeader.RTR = CAN_RTR_DATA;
   TxHeader.DLC = 6;
 
@@ -118,10 +119,15 @@ int main(void)
   HAL_Delay(500);
 
   //eeprom_read(&hi2c2, 0b000, 169, &rx);
-  uint16_t addr = 2;
-  //eeprom_config_write(&hi2c2, 0x366);
-  eeprom_config_read(&hi2c2, &addr);
-  TxHeader.StdId = addr;
+  uint16_t addr = 0x366;
+  uint8_t buffer[2];
+  buffer[0] = (uint8_t)((addr >> 8) & 0xFF);      // High byte of 0x363
+  buffer[1] = (uint8_t)(addr & 0xFF);
+  buffer[0] = addr;
+  HAL_I2C_Mem_Write(&hi2c2, EEPROM_I2C_ADDR << 1, 0x00, I2C_MEMADD_SIZE_8BIT, buffer, 2, HAL_MAX_DELAY);
+  HAL_Delay(5);
+  HAL_I2C_Mem_Read(&hi2c2, EEPROM_I2C_ADDR << 1, 0x00, I2C_MEMADD_SIZE_8BIT, buffer, 2, HAL_MAX_DELAY);
+  TxHeader.StdId = (buffer[0] << 8) | buffer[1];
   int16_t amb = 0;
   int16_t obj = 0;
   float emi = 0.0;
@@ -163,7 +169,6 @@ int main(void)
       static uint32_t usbTimeout = 0;
       if (HAL_GetTick() - usbTimeout > 250) {
     	  usbTimeout = HAL_GetTick();
-
     	  sprintf(msg, "CAN addr: %x\tRPM: %d\temissivity: %f\tobj: %f\tamb: %f\r\n", addr, TxData[0] << 8 | TxData[1], emi, mlx90614_calcTemperature(obj), mlx90614_calcTemperature(amb));
     	  //sprintf(msg, "millis: %d\tmicros: %d\r\n", HAL_GetTick(), __HAL_TIM_GET_COUNTER(&htim5));
     	  CDC_Transmit_FS((uint8_t*) msg, strlen(msg));
