@@ -121,7 +121,9 @@ int main(void)
   uint16_t addr = 2;
   //eeprom_config_write(&hi2c2, 0x366);
   eeprom_config_read(&hi2c2, &addr);
-  TxHeader.StdId = addr;
+  //TxHeader.StdId = addr;
+  addr = 0x365;
+  TxHeader.StdId = 0x365;
   int16_t amb = 0;
   int16_t obj = 0;
   float emi = 0.0;
@@ -147,7 +149,7 @@ int main(void)
 	      mlx90614_getAmbient(&hi2c2, &amb);
 	      mlx90614_getObject(&hi2c2, &obj);
 
-	      rpm = (1000000 * 60) / (diff * 8);
+	      rpm = (1000000 * 60) / (diff * 20);
 	      TxData[0] = rpm >> 8;
 	      TxData[1] = rpm & 0xFF;
 
@@ -164,7 +166,7 @@ int main(void)
       if (HAL_GetTick() - usbTimeout > 250) {
     	  usbTimeout = HAL_GetTick();
 
-    	  sprintf(msg, "CAN addr: %x\tRPM: %d\temissivity: %f\tobj: %f\tamb: %f\r\n", addr, TxData[0] << 8 | TxData[1], emi, mlx90614_calcTemperature(obj), mlx90614_calcTemperature(amb));
+    	  sprintf(msg, "CAN addr: %x\tRPM: %d\temissivity: %f\tobj: %f\tamb: %f \r\n", addr, TxData[0] << 8 | TxData[1], emi, mlx90614_calcTemperature(obj), mlx90614_calcTemperature(amb));
     	  //sprintf(msg, "millis: %d\tmicros: %d\r\n", HAL_GetTick(), __HAL_TIM_GET_COUNTER(&htim5));
     	  CDC_Transmit_FS((uint8_t*) msg, strlen(msg));
       }
